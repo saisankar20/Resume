@@ -17,14 +17,14 @@ jobs:
 
       - name: Set up Git
         run: |
-          git config --global user.name "Saisankar20"
+          git config --global user.name "saisankar20"
           git config --global user.email "sankar156b@gmail.com"
 
       - name: Get the current date
         id: date
         run: |
-          echo "::set-output name=month::$(date +'%B')"
-          echo "::set-output name=day::$(date +'%d')"
+          echo "month=$(date +'%B')" >> $GITHUB_ENV
+          echo "day=$(date +'%d')" >> $GITHUB_ENV
 
       - name: Move old resume to 'old-resume' branch
         run: |
@@ -32,9 +32,9 @@ jobs:
           git checkout old-resume
           
           if [ -f resume-SaiSankar.pdf ]; then
-            NEW_FILENAME="resume-SaiSankar${{ steps.date.outputs.month }}${{ steps.date.outputs.day }}.pdf"
+            NEW_FILENAME="resume-SaiSankar${{ env.month }}${{ env.day }}.pdf"
             if [ -f "$NEW_FILENAME" ]; then
-              NEW_FILENAME="resume-SaiSankar${{ steps.date.outputs.month }}${{ steps.date.outputs.day }}-$(date +'%H%M%S').pdf"
+              NEW_FILENAME="resume-SaiSankar${{ env.month }}${{ env.day }}-$(date +'%H%M%S').pdf"
             fi
             git mv resume-SaiSankar.pdf "$NEW_FILENAME"
             git add "$NEW_FILENAME"
