@@ -1,0 +1,54 @@
+name: Archive Old Resume
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  archive-resume:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "Saisankar20"
+          git config --global user.email "sankar156b@gmail.com"
+
+      - name: Get the current date
+        id: date
+        run: |
+          echo "::set-output name=month::$(date +'%B')"
+          echo "::set-output name=day::$(date +'%d')"
+
+      - name: Move old resume to 'old-resume' branch
+        run: |
+          git fetch origin old-resume:old-resume || git checkout --orphan old-resume
+          git checkout old-resume
+          
+          if [ -f resume-SaiSankar.pdf ]; then
+            NEW_FILENAME="resume-SaiSankar${{ steps.date.outputs.month }}${{ steps.date.outputs.day }}.pdf"
+            if [ -f "$NEW_FILENAME" ]; then
+              NEW_FILENAME="resume-SaiSankar${{ steps.date.outputs.month }}${{ steps.date.outputs.day }}-$(date +'%H%M%S').pdf"
+            fi
+            git mv resume-SaiSankar.pdf "$NEW_FILENAME"
+            git add "$NEW_FILENAME"
+            git commit -m "Archived old resume as $NEW_FILENAME"
+          fi
+
+          git push origin old-resume
+
+      - name: Return to main branch
+        run: |
+          git checkout main
+
+      - name: Add and commit latest resume on main branch
+        run: |
+          git add resume-SaiSankar.pdf
+          git commit -m "Updated resume on main branch"
+          git push origin main
