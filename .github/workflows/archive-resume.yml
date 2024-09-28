@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write  # Grants read and write permissions to the contents of the repository
+
 jobs:
   archive-resume:
     runs-on: ubuntu-latest
@@ -14,10 +17,11 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}  # Ensure the token is set correctly
 
       - name: Set up Git
         run: |
-          git config --global user.name "saisankar20"
+          git config --global user.name "Saisankar20"
           git config --global user.email "sankar156b@gmail.com"
 
       - name: Get the current date
@@ -30,7 +34,7 @@ jobs:
         run: |
           git fetch origin old-resume:old-resume || git checkout --orphan old-resume
           git checkout old-resume
-          
+
           if [ -f resume-SaiSankar.pdf ]; then
             NEW_FILENAME="resume-SaiSankar${{ env.month }}${{ env.day }}.pdf"
             if [ -f "$NEW_FILENAME" ]; then
