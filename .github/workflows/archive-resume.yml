@@ -6,7 +6,7 @@ on:
       - main
 
 permissions:
-  contents: write  # Grants read and write permissions to the contents of the repository
+  contents: write  # Grants permissions to modify repository content
 
 jobs:
   archive-resume:
@@ -16,8 +16,7 @@ jobs:
       - name: Checkout main branch
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}  # Ensure the token is set correctly
+          fetch-depth: 0  # Fetch all history to ensure proper branch handling
 
       - name: Set up Git
         run: |
@@ -30,29 +29,35 @@ jobs:
           echo "month=$(date +'%B')" >> $GITHUB_ENV
           echo "day=$(date +'%d')" >> $GITHUB_ENV
 
-      - name: Move old resume to 'old-resume' branch
+      - name: Archive old resume to 'old-resume' branch
         run: |
-          git fetch origin old-resume:old-resume || git checkout --orphan old-resume
-          git checkout old-resume
+          # Checkout or create the 'old-resume' branch
+          git fetch origin old-resume
+          git checkout old-resume || git checkout --orphan old-resume
 
+          # Rename the existing resume if it exists
           if [ -f resume-SaiSankar.pdf ]; then
-            NEW_FILENAME="resume-SaiSankar${{ env.month }}${{ env.day }}.pdf"
+            NEW_FILENAME="resume-SaiSankar-${{ env.month }}-${{ env.day }}.pdf"
             if [ -f "$NEW_FILENAME" ]; then
-              NEW_FILENAME="resume-SaiSankar${{ env.month }}${{ env.day }}-$(date +'%H%M%S').pdf"
+              NEW_FILENAME="resume-SaiSankar-${{ env.month }}-${{ env.day }}-$(date +'%H%M%S').pdf"
             fi
-            git mv resume-SaiSankar.pdf "$NEW_FILENAME"
+            mv resume-SaiSankar.pdf "$NEW_FILENAME"
             git add "$NEW_FILENAME"
             git commit -m "Archived old resume as $NEW_FILENAME"
           fi
 
-          git push origin old-resume
+          # Push changes to the 'old-resume' branch
+          git push origin old-resume || echo "No changes to push on old-resume branch"
 
       - name: Return to main branch
         run: |
           git checkout main
 
-      - name: Add and commit latest resume on main branch
+      - name: Add and commit the latest resume on main branch
         run: |
-          git add resume-SaiSankar.pdf
-          git commit -m "Updated resume on main branch"
-          git push origin main
+          if [ -f resume-SaiSankar.pdf ]; then
+            git add resume-SaiSankar.pdf
+            git commit -m "Updated resume on main branch" || echo "No changes to commit"
+            git push origin main
+          else
+            echo "No updated resume found on main branch."
