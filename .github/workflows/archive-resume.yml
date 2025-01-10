@@ -6,7 +6,7 @@ on:
       - main
 
 permissions:
-  contents: write  # Grants permissions to modify repository content
+  contents: write
 
 jobs:
   archive-resume:
@@ -16,7 +16,7 @@ jobs:
       - name: Checkout main branch
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Fetch all history to ensure proper branch handling
+          fetch-depth: 0
 
       - name: Set up Git
         run: |
@@ -31,11 +31,9 @@ jobs:
 
       - name: Archive old resume to 'old-resume' branch
         run: |
-          # Checkout or create the 'old-resume' branch
           git fetch origin old-resume
           git checkout old-resume || git checkout --orphan old-resume
 
-          # Rename the existing resume if it exists
           if [ -f resume-SaiSankar.pdf ]; then
             NEW_FILENAME="resume-SaiSankar-${{ env.month }}-${{ env.day }}.pdf"
             if [ -f "$NEW_FILENAME" ]; then
@@ -46,7 +44,6 @@ jobs:
             git commit -m "Archived old resume as $NEW_FILENAME"
           fi
 
-          # Push changes to the 'old-resume' branch
           git push origin old-resume || echo "No changes to push on old-resume branch"
 
       - name: Return to main branch
@@ -61,3 +58,4 @@ jobs:
             git push origin main
           else
             echo "No updated resume found on main branch."
+          fi
