@@ -31,16 +31,15 @@ jobs:
 
       - name: Archive old resume and process new file
         run: |
-          # Check if the old resume exists
+          # Archive the existing resume if it exists
           if [ -f resume-SaiSankar.pdf ]; then
             git fetch origin old-resume
             git checkout old-resume || git checkout --orphan old-resume
 
-            # Rename and move old resume
-            OLD_FILENAME="resume-SaiSankar-${{ env.month }}-${{ env.day }}-$(date +'%H%M%S').pdf"
-            mv ../resume-SaiSankar.pdf "$OLD_FILENAME"
-            git add "$OLD_FILENAME"
-            git commit -m "Archived previous resume as $OLD_FILENAME"
+            # Copy old resume to old-resume branch
+            mv ../resume-SaiSankar.pdf "resume-SaiSankar-${{ env.month }}-${{ env.day }}-$(date +'%H%M%S').pdf"
+            git add "resume-SaiSankar-${{ env.month }}-${{ env.day }}-$(date +'%H%M%S').pdf"
+            git commit -m "Archived previous resume"
             git push origin old-resume
 
             # Return to main branch
@@ -49,25 +48,10 @@ jobs:
             echo "No existing resume-SaiSankar.pdf to archive."
           fi
 
-          # Archive all other PDF files except the new one
-          for file in $(ls *.pdf | grep -v 'resume-SaiSankar.pdf'); do
-            git fetch origin old-resume
-            git checkout old-resume
-
-            ARCHIVE_FILENAME="${file%.*}-${{ env.month }}-${{ env.day }}.pdf"
-            mv ../"$file" "$ARCHIVE_FILENAME"
-            git add "$ARCHIVE_FILENAME"
-            git commit -m "Archived $file as $ARCHIVE_FILENAME"
-            git push origin old-resume
-
-            git checkout main
-            git rm "$file"
-          done
-
-          # Rename the new file to resume-SaiSankar.pdf
+          # Rename new file to resume-SaiSankar.pdf
           for file in $(ls *.pdf | grep -v 'resume-SaiSankar.pdf'); do
             mv "$file" "resume-SaiSankar.pdf"
             git add "resume-SaiSankar.pdf"
-            git commit -m "Updated resume with new file"
+            git commit -m "Updated resume with new file: $file"
             git push origin main
           done
