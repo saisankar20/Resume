@@ -29,9 +29,9 @@ jobs:
           echo "month=$(date +'%B')" >> $GITHUB_ENV
           echo "day=$(date +'%d')" >> $GITHUB_ENV
 
-      - name: Archive old resume and clean up main branch
+      - name: Archive old resume and process new file
         run: |
-          # Archive the existing resume if it exists
+          # Check if the old resume exists
           if [ -f resume-SaiSankar.pdf ]; then
             git fetch origin old-resume
             git checkout old-resume || git checkout --orphan old-resume
@@ -45,10 +45,12 @@ jobs:
 
             # Return to main branch
             git checkout main
+          else
+            echo "No existing resume-SaiSankar.pdf to archive."
           fi
 
           # Archive all other PDF files except the new one
-          for file in $(ls *.pdf | grep -v 'Jake_s_Resume (2).pdf'); do
+          for file in $(ls *.pdf | grep -v 'resume-SaiSankar.pdf'); do
             git fetch origin old-resume
             git checkout old-resume
 
@@ -63,7 +65,9 @@ jobs:
           done
 
           # Rename the new file to resume-SaiSankar.pdf
-          mv "Jake_s_Resume (2).pdf" "resume-SaiSankar.pdf"
-          git add "resume-SaiSankar.pdf"
-          git commit -m "Updated resume with new file"
-          git push origin main
+          for file in $(ls *.pdf | grep -v 'resume-SaiSankar.pdf'); do
+            mv "$file" "resume-SaiSankar.pdf"
+            git add "resume-SaiSankar.pdf"
+            git commit -m "Updated resume with new file"
+            git push origin main
+          done
