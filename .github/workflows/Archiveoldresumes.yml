@@ -1,0 +1,115 @@
+# .github/workflows/archive-resume.yml
+
+name: Archive old resumes
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '*.pdf'
+  # Optional: also run on a schedule
+  # schedule:
+  #   - cron: '0 0 * * 1'
+
+jobs:
+  archive-resumes:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out main branch
+        uses: actions/checkout@v3
+        with:
+          # Need full history to create/checkout other branches
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "[email protected]"
+
+      - name: Detect PDF files and pick newest
+        id: detect_newest
+        run: |
+          # List all PDFs in the repo (on main), sorted by modification time descending (newest first).
+          PDFs=($(ls -t *.pdf 2>/dev/null || true))
+          if [ "${#PDFs[@]}" -eq 0 ]; then
+            echo "No PDF files found. Nothing to archive or rename."
+            echo "found-newest=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # The newest PDF (first in sorted list)
+          NEWEST_PDF=${PDFs[0]}
+          # All older PDFs
+          OLDER_PDFS=("${PDFs[@]:1}")
+
+          echo "NEWEST_PDF=$NEWEST_PDF"
+          echo "OLDER_PDFS=${OLDER_PDFS[@]}"
+
+          echo "newest=$NEWEST_PDF" >> $GITHUB_OUTPUT
+          echo "older=${OLDER_PDFS[*]}" >> $GITHUB_OUTPUT
+          echo "found-newest=true" >> $GITHUB_OUTPUT
+
+      - name: Stop if no PDFs found
+        if: steps.detect_newest.outputs.found-newest == 'false'
+        run: echo "No PDFs detected. Exiting."
+
+      - name: Move older PDFs to old-resume branch with timestamp
+        if: steps.detect_newest.outputs.found-newest == 'true'
+        run: |
+          # Create a temp folder for older PDFs
+          mkdir -p temp-old-pdfs
+
+          for pdf in ${{ steps.detect_newest.outputs.older }}; do
+            if [ -f "$pdf" ]; then
+              # Example daily timestamp -> "YYYY-MM-DD"
+              TIMESTAMP="$(date +'%Y-%m-%d')"
+              # e.g. "resume-SaiSankar-2025-01-10.pdf"
+              NEW_NAME="resume-SaiSankar-${TIMESTAMP}.pdf"
+              mv "$pdf" "temp-old-pdfs/$NEW_NAME"
+              echo "Archived $pdf -> $NEW_NAME"
+            else
+              echo "Skipping $pdf, it does not exist."
+            fi
+          done
+
+          # Switch to old-resume branch (create if missing)
+          git checkout old-resume || git checkout -b old-resume
+          git pull origin old-resume || true
+
+          # Move renamed PDFs into old-resume branch
+          if [ -d temp-old-pdfs ] && [ "$(ls -A temp-old-pdfs)" ]; then
+            mv temp-old-pdfs/*.pdf .
+            git add .
+            git commit -m "Archive old resumes with timestamp [skip ci]"
+            git push origin old-resume
+          else
+            echo "No old PDFs to archive."
+          fi
+
+          # Return to main branch
+          git checkout main
+
+      - name: Rename newest PDF to resume-SaiSankar.pdf
+        if: steps.detect_newest.outputs.found-newest == 'true'
+        run: |
+          NEWEST=${{ steps.detect_newest.outputs.newest }}
+          if [ -f "$NEWEST" ]; then
+            TARGET_NAME="resume-SaiSankar.pdf"
+            if [ "$NEWEST" != "$TARGET_NAME" ]; then
+              mv "$NEWEST" "$TARGET_NAME"
+              git add "$NEWEST" "$TARGET_NAME" || true
+              git commit -m "Rename newest resume to $TARGET_NAME [skip ci]"
+            else
+              echo "Newest PDF already named $TARGET_NAME."
+            fi
+          else
+            echo "$NEWEST does not exist, skipping rename."
+
+      - name: Push changes to main
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git push origin main
+          else
+            echo "No changes to push on main."
