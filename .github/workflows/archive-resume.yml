@@ -29,39 +29,29 @@ jobs:
           echo "month=$(date +'%B')" >> $GITHUB_ENV
           echo "day=$(date +'%d')" >> $GITHUB_ENV
 
-      - name: Move all wrong resume files to 'old-resume' branch
+      - name: Archive old resume and process new file
         run: |
-          # Checkout or create the 'old-resume' branch
-          git fetch origin old-resume
-          git checkout old-resume || git checkout --orphan old-resume
+          # Check if the old resume exists
+          if [ -f resume-SaiSankar.pdf ]; then
+            # Switch to 'old-resume' branch
+            git fetch origin old-resume
+            git checkout old-resume || git checkout --orphan old-resume
 
-          # Find and move incorrectly named files
-          for file in $(ls | grep -i "resume" | grep -v "resume-SaiSankar.pdf"); do
-            NEW_FILENAME="${file%.*}-${{ env.month }}-${{ env.day }}.${file##*.}"
-            if [ -f "$NEW_FILENAME" ]; then
-              NEW_FILENAME="${file%.*}-${{ env.month }}-${{ env.day }}-$(date +'%H%M%S').${file##*.}"
-            fi
-            mv "$file" "$NEW_FILENAME"
-            git add "$NEW_FILENAME"
-            echo "Archived $file as $NEW_FILENAME"
+            # Rename and move old resume
+            OLD_FILENAME="resume-SaiSankar-${{ env.month }}-${{ env.day }}-$(date +'%H%M%S').pdf"
+            mv ../resume-SaiSankar.pdf "$OLD_FILENAME"
+            git add "$OLD_FILENAME"
+            git commit -m "Archived previous resume as $OLD_FILENAME"
+            git push origin old-resume
+
+            # Switch back to main
+            git checkout main
+          fi
+
+          # Detect new file and rename it to resume-SaiSankar.pdf
+          for file in $(ls | grep '.pdf' | grep -v 'resume-SaiSankar.pdf'); do
+            mv "$file" "resume-SaiSankar.pdf"
+            git add "resume-SaiSankar.pdf"
+            git commit -m "Updated resume with new file: $file"
+            git push origin main
           done
-
-          # Commit and push changes to 'old-resume' branch
-          git commit -m "Archived incorrectly named resumes"
-          git push origin old-resume || echo "No changes to push on old-resume branch"
-
-      - name: Return to main branch
-        run: |
-          git checkout main
-
-      - name: Clean up incorrectly named files from main branch
-        run: |
-          # Remove incorrectly named files from main branch
-          for file in $(ls | grep -i "resume" | grep -v "resume-SaiSankar.pdf"); do
-            git rm -f "$file"
-            echo "Removed $file from main branch"
-          done
-
-          # Commit and push changes
-          git commit -m "Cleaned up incorrectly named files" || echo "No changes to commit"
-          git push origin main || echo "No changes to push on main branch"
