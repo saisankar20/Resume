@@ -29,11 +29,10 @@ jobs:
           echo "month=$(date +'%B')" >> $GITHUB_ENV
           echo "day=$(date +'%d')" >> $GITHUB_ENV
 
-      - name: Archive old resume and process new file
+      - name: Archive old resume and clean up main branch
         run: |
-          # Check if the old resume exists
+          # Archive the existing resume if it exists
           if [ -f resume-SaiSankar.pdf ]; then
-            # Switch to 'old-resume' branch
             git fetch origin old-resume
             git checkout old-resume || git checkout --orphan old-resume
 
@@ -44,14 +43,27 @@ jobs:
             git commit -m "Archived previous resume as $OLD_FILENAME"
             git push origin old-resume
 
-            # Switch back to main
+            # Return to main branch
             git checkout main
           fi
 
-          # Detect new file and rename it to resume-SaiSankar.pdf
-          for file in $(ls | grep '.pdf' | grep -v 'resume-SaiSankar.pdf'); do
-            mv "$file" "resume-SaiSankar.pdf"
-            git add "resume-SaiSankar.pdf"
-            git commit -m "Updated resume with new file: $file"
-            git push origin main
+          # Archive all other PDF files except the new one
+          for file in $(ls *.pdf | grep -v 'Jake_s_Resume (2).pdf'); do
+            git fetch origin old-resume
+            git checkout old-resume
+
+            ARCHIVE_FILENAME="${file%.*}-${{ env.month }}-${{ env.day }}.pdf"
+            mv ../"$file" "$ARCHIVE_FILENAME"
+            git add "$ARCHIVE_FILENAME"
+            git commit -m "Archived $file as $ARCHIVE_FILENAME"
+            git push origin old-resume
+
+            git checkout main
+            git rm "$file"
           done
+
+          # Rename the new file to resume-SaiSankar.pdf
+          mv "Jake_s_Resume (2).pdf" "resume-SaiSankar.pdf"
+          git add "resume-SaiSankar.pdf"
+          git commit -m "Updated resume with new file"
+          git push origin main
