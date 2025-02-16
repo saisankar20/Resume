@@ -61,12 +61,14 @@ jobs:
           # Stage the new versioned file
           git add "$OLD_NAME"
 
-          # Commit & push
+          # Commit & push to old-resume
           git commit -m "Archive old resume as $OLD_NAME"
           git push origin old-resume
 
-          # Switch back to main, remove the old resume file
+          # Switch back to main, pull latest from remote, remove the old resume file
           git checkout main
+          git pull --rebase origin main
+
           git rm resume-SaiSankar.pdf
           git commit -m "Remove old resume from main (archived)"
           git push origin main
