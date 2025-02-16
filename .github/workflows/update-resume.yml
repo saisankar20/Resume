@@ -55,20 +55,17 @@ jobs:
           # Rename it to the versioned file
           mv resume-SaiSankar.pdf "$OLD_NAME"
 
-          # Remove the old name from staging (so it won't remain in old-resume)
+          # Remove the old name from staging (if any)
           git rm --cached resume-SaiSankar.pdf 2>/dev/null || true
 
-          # Stage the new versioned file
+          # Stage the new versioned file and commit
           git add "$OLD_NAME"
-
-          # Commit & push to old-resume
           git commit -m "Archive old resume as $OLD_NAME"
           git push origin old-resume
 
-          # Switch back to main, pull latest from remote, remove the old resume file
+          # Switch back to main, pull latest changes, remove the old resume file
           git checkout main
           git pull --rebase origin main
-
           git rm resume-SaiSankar.pdf
           git commit -m "Remove old resume from main (archived)"
           git push origin main
@@ -90,4 +87,6 @@ jobs:
           mv "$NEWFILE" resume-SaiSankar.pdf
           git add resume-SaiSankar.pdf
           git commit -m "Rename new resume to resume-SaiSankar.pdf"
+          # Pull the latest changes before pushing to avoid non-fast-forward errors.
+          git pull --rebase origin main
           git push origin main
