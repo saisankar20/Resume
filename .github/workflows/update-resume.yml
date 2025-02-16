@@ -26,14 +26,13 @@ jobs:
 
       # Step 3: Check if an old resume (resume-SaiSankar.pdf) already exists on main.
       - name: Detect old resume
-  id: detect_old
-  run: |
-    if [ -f "resume-SaiSankar.pdf" ]; then
-      echo "found_old=true" >> $GITHUB_OUTPUT
-    else
-      echo "found_old=false" >> $GITHUB_OUTPUT
-    fi
-
+        id: detect_old
+        run: |
+          if [ -f "resume-SaiSankar.pdf" ]; then
+            echo "found_old=true" >> $GITHUB_OUTPUT
+          else
+            echo "found_old=false" >> $GITHUB_OUTPUT
+          fi
 
       # Step 4: If the old resume exists, archive it into old-resume branch.
       - name: Archive old resume
