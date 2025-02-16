@@ -35,42 +35,41 @@ jobs:
           fi
 
       # Step 4: If the old resume exists, archive it into old-resume branch.
-  - name: Archive old resume
-  if: steps.detect_old.outputs.found_old == 'true'
-  run: |
-    # Generate a unique version string, e.g. 2025-02-16-16-29-10
-    VERSION=$(date +'%Y-%m-%d-%H-%M-%S')
-    OLD_NAME="resume-SaiSankar-${VERSION}.pdf"
+      - name: Archive old resume
+        if: steps.detect_old.outputs.found_old == 'true'
+        run: |
+          # Generate a unique version string, e.g. 2025-02-16-16-29-10
+          VERSION=$(date +'%Y-%m-%d-%H-%M-%S')
+          OLD_NAME="resume-SaiSankar-${VERSION}.pdf"
 
-    # Switch to old-resume branch (create it if it doesn't exist)
-    if git ls-remote --exit-code origin old-resume; then
-      git checkout old-resume
-    else
-      git checkout -b old-resume
-    fi
+          # Switch to old-resume branch (create it if it doesn't exist)
+          if git ls-remote --exit-code origin old-resume; then
+            git checkout old-resume
+          else
+            git checkout -b old-resume
+          fi
 
-    # Pull the old resume from main
-    git checkout main -- resume-SaiSankar.pdf
+          # Pull the old resume from main
+          git checkout main -- resume-SaiSankar.pdf
 
-    # Rename it to the versioned file
-    mv resume-SaiSankar.pdf "$OLD_NAME"
+          # Rename it to the versioned file
+          mv resume-SaiSankar.pdf "$OLD_NAME"
 
-    # Remove the old name from staging (so it won't remain in old-resume)
-    git rm --cached resume-SaiSankar.pdf 2>/dev/null || true
+          # Remove the old name from staging (so it won't remain in old-resume)
+          git rm --cached resume-SaiSankar.pdf 2>/dev/null || true
 
-    # Stage the new versioned file
-    git add "$OLD_NAME"
+          # Stage the new versioned file
+          git add "$OLD_NAME"
 
-    # Commit & push
-    git commit -m "Archive old resume as $OLD_NAME"
-    git push origin old-resume
+          # Commit & push
+          git commit -m "Archive old resume as $OLD_NAME"
+          git push origin old-resume
 
-    # Switch back to main, remove the old resume file
-    git checkout main
-    git rm resume-SaiSankar.pdf
-    git commit -m "Remove old resume from main (archived)"
-    git push origin main
-
+          # Switch back to main, remove the old resume file
+          git checkout main
+          git rm resume-SaiSankar.pdf
+          git commit -m "Remove old resume from main (archived)"
+          git push origin main
 
       # Step 5: Find any "new" PDF file that is not named resume-SaiSankar.pdf.
       - name: Detect new resume file
